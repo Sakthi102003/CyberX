@@ -209,9 +209,9 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 If you have any questions or need help customizing the portfolio, feel free to reach out:
 
-- **Email**: your-email@example.com
-- **LinkedIn**: [Your LinkedIn Profile](https://linkedin.com/in/yourprofile)
-- **GitHub**: [Your GitHub Profile](https://github.com/yourusername)
+- **Email**: sakthimurugan102003@gmail.com
+- **LinkedIn**: [Your LinkedIn Profile](https://linkedin.com/in/sakthimurugan-s)
+- **GitHub**: [Your GitHub Profile](https://github.com/Sakthi102003)
 
 ---
 
