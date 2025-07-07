@@ -200,9 +200,6 @@ The portfolio is fully responsive with breakpoints:
    ```
 3. Deploy: `npm run deploy`
 
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
 
 ## 🤝 Contributing
 
