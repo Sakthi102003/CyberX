@@ -1,0 +1,91 @@
+.typewriter-container {
+  display: inline-block;
+  position: relative;
+  background: inherit;
+  -webkit-background-clip: inherit;
+  -webkit-text-fill-color: inherit;
+  background-clip: inherit;
+}
+
+.typewriter-text {
+  display: inline-block;
+  background: inherit;
+  -webkit-background-clip: inherit;
+  -webkit-text-fill-color: inherit;
+  background-clip: inherit;
+  color: inherit;
+}
+
+/* Fallback for browsers that don't support background-clip */
+@supports not (-webkit-background-clip: text) {
+  .typewriter-text {
+    color: var(--cyber-blue);
+    background: none;
+    -webkit-text-fill-color: unset;
+  }
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  background: inherit;
+  -webkit-background-clip: inherit;
+  -webkit-text-fill-color: inherit;
+  background-clip: inherit;
+  color: inherit;
+  animation: blink 1s infinite;
+  font-weight: 400;
+}
+
+/* Fallback for cursor */
+@supports not (-webkit-background-clip: text) {
+  .typewriter-cursor {
+    color: var(--cyber-blue);
+    background: none;
+    -webkit-text-fill-color: unset;
+  }
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Glitch effect for typewriter */
+.typewriter-text.glitch {
+  position: relative;
+}
+
+.typewriter-text.glitch::before,
+.typewriter-text.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.typewriter-text.glitch::before {
+  animation: glitch-1 0.5s infinite;
+  color: var(--cyber-red);
+  z-index: -1;
+}
+
+.typewriter-text.glitch::after {
+  animation: glitch-2 0.5s infinite;
+  color: var(--cyber-blue);
+  z-index: -2;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-cursor {
+    animation: none;
+    opacity: 1;
+  }
+}

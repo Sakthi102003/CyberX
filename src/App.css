@@ -1,0 +1,80 @@
+.App {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.main-content {
+  position: relative;
+  z-index: 1;
+}
+
+.section {
+  min-height: 100vh;
+  position: relative;
+}
+
+.section.active {
+  display: block !important;
+}
+
+/* Smooth transitions between sections */
+.section-transition {
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar for the app */
+.App::-webkit-scrollbar {
+  width: 8px;
+}
+
+.App::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.App::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 4px;
+}
+
+.App::-webkit-scrollbar-thumb:hover {
+  background: var(--cyber-blue);
+}
+
+/* Loading states */
+.loading-enter {
+  opacity: 0;
+}
+
+.loading-enter-active {
+  opacity: 1;
+  transition: opacity 0.5s ease-in;
+}
+
+.loading-exit {
+  opacity: 1;
+}
+
+.loading-exit-active {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .section {
+    min-height: auto;
+    padding: 2rem 0;
+  }
+}
+
+/* Performance optimizations */
+.section:not(.active) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.section.active {
+  visibility: visible;
+  pointer-events: auto;
+}
