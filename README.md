@@ -126,7 +126,7 @@ To modify the favicon:
 1. Edit `public/favicon.svg` to change the design
 2. The SVG automatically adapts to light/dark modes
 
-## 📧 Contact Form Setup
+## 📧 Contact Form Setup (If Needed)
 
 The contact form is ready for integration with EmailJS or a backend service:
 
