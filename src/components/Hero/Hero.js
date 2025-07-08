@@ -38,11 +38,27 @@ const Hero = () => {
   ];
 
   const handleDownloadResume = async () => {
-    await downloadResume();
+    try {
+      const success = await downloadResume();
+      if (success) {
+        console.log('Resume download successful');
+      }
+    } catch (error) {
+      console.error('Resume download failed:', error);
+      alert('Failed to download resume. Please try again or contact me directly.');
+    }
   };
 
   const handlePreviewResume = async () => {
-    await previewResume();
+    try {
+      const success = await previewResume();
+      if (success) {
+        console.log('Resume preview successful');
+      }
+    } catch (error) {
+      console.error('Resume preview failed:', error);
+      alert('Failed to preview resume. Please try the download option or contact me directly.');
+    }
   };
 
   return (

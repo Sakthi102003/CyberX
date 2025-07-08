@@ -16,39 +16,41 @@ export const downloadPDF = async (url, filename) => {
       throw new Error('PDF file is not accessible or invalid');
     }
 
-    // Fetch the PDF as a blob for better control
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    // Try the blob-based download first (more reliable)
+    try {
+      const response = await fetch(url, { cache: 'no-cache' });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    const blob = await response.blob();
+      const blob = await response.blob();
+      
+      // Ensure the blob is treated as a PDF
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+      
+      // Create a temporary URL for the blob
+      const blobUrl = window.URL.createObjectURL(pdfBlob);
+      
+      // Create a download link
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
+      
+      // Add to DOM, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+      
+      return true;
+    } catch (blobError) {
+      console.warn('Blob download failed, trying fallback:', blobError);
+    }
     
-    // Ensure the blob is treated as a PDF
-    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-    
-    // Create a temporary URL for the blob
-    const blobUrl = window.URL.createObjectURL(pdfBlob);
-    
-    // Create a download link
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.setAttribute('download', filename);
-    link.style.display = 'none';
-    
-    // Add to DOM, click, and remove
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clean up the blob URL
-    window.URL.revokeObjectURL(blobUrl);
-    
-    return true;
-  } catch (error) {
-    console.error('Error downloading PDF:', error);
-    
-    // Fallback: try simple link-based download
+    // Fallback 1: try simple link-based download
     try {
       const link = document.createElement('a');
       link.href = url;
@@ -60,11 +62,31 @@ export const downloadPDF = async (url, filename) => {
       document.body.removeChild(link);
       return true;
     } catch (fallbackError) {
-      console.error('Fallback download also failed:', fallbackError);
-      // Last resort: open in new tab
-      window.open(url, '_blank');
-      return false;
+      console.warn('Simple download also failed, opening in new tab:', fallbackError);
     }
+    
+    // Fallback 2: open in new tab with download hint
+    try {
+      const newWindow = window.open(url, '_blank');
+      if (newWindow) {
+        // Try to set download attribute via JavaScript
+        setTimeout(() => {
+          try {
+            newWindow.document.title = filename;
+          } catch (e) {
+            // Cross-origin, ignore
+          }
+        }, 100);
+        return true;
+      }
+    } catch (newTabError) {
+      console.warn('New tab fallback failed:', newTabError);
+    }
+    
+    throw new Error('All download methods failed');
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+    return false;
   }
 };
 
@@ -74,20 +96,37 @@ export const downloadPDF = async (url, filename) => {
  */
 export const downloadResume = async () => {
   try {
-    // Get the base URL dynamically
-    const baseUrl = window.location.origin;
-    const resumeUrl = `${baseUrl}/resume.pdf`;
+    // Get the base URL dynamically, but use absolute path for deployment
+    const resumeUrl = `${window.location.origin}/resume.pdf`;
     
-    // Validate PDF access first
-    const isValid = await validatePDFAccess(resumeUrl);
-    if (!isValid) {
-      throw new Error('Resume PDF is not accessible');
+    // For development, also try with process.env.PUBLIC_URL
+    const altResumeUrl = `${process.env.PUBLIC_URL || ''}/resume.pdf`;
+    
+    // Try primary URL first
+    let success = false;
+    try {
+      const isValid = await validatePDFAccess(resumeUrl);
+      if (isValid) {
+        success = await downloadPDF(resumeUrl, 'Sakthimurugan_Resume.pdf');
+      }
+    } catch (error) {
+      console.warn('Primary URL failed, trying alternative:', error);
     }
     
-    const success = await downloadPDF(resumeUrl, 'Sakthimurugan_Resume.pdf');
+    // If primary fails, try alternative URL
+    if (!success && altResumeUrl !== '/resume.pdf') {
+      try {
+        const isValid = await validatePDFAccess(altResumeUrl);
+        if (isValid) {
+          success = await downloadPDF(altResumeUrl, 'Sakthimurugan_Resume.pdf');
+        }
+      } catch (error) {
+        console.warn('Alternative URL also failed:', error);
+      }
+    }
     
     if (!success) {
-      throw new Error('Download failed');
+      throw new Error('All download attempts failed');
     }
     
     return true;
@@ -118,26 +157,45 @@ export const downloadResume = async () => {
 export const validatePDFAccess = async (url) => {
   try {
     // First, check with HEAD request for basic accessibility
-    const headResponse = await fetch(url, { method: 'HEAD' });
+    const headResponse = await fetch(url, { 
+      method: 'HEAD',
+      cache: 'no-cache' // Force fresh request for validation
+    });
+    
     if (!headResponse.ok) {
-      console.error('PDF HEAD request failed:', headResponse.status);
+      console.error('PDF HEAD request failed:', headResponse.status, headResponse.statusText);
       return false;
     }
     
     const contentType = headResponse.headers.get('content-type');
     if (!contentType || !contentType.includes('application/pdf')) {
-      console.error('Invalid content type:', contentType);
-      return false;
+      console.warn('Unexpected content type:', contentType, 'but proceeding...');
+      // Don't fail immediately for content type in deployment
     }
     
-    // Get a small portion of the file to validate PDF signature
-    const response = await fetch(url, {
-      headers: { 'Range': 'bytes=0-10' }
-    });
+    // Try to get a small portion of the file to validate PDF signature
+    try {
+      const response = await fetch(url, {
+        headers: { 'Range': 'bytes=0-10' },
+        cache: 'no-cache'
+      });
+      
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const signature = String.fromCharCode(...uint8Array.slice(0, 4));
+        
+        if (signature === '%PDF') {
+          return true;
+        }
+      }
+    } catch (rangeError) {
+      console.warn('Range request failed, trying full request:', rangeError);
+    }
     
-    if (!response.ok) {
-      // If range request fails, try regular request but limit the read
-      const fullResponse = await fetch(url);
+    // If range request fails, try regular request but limit the read
+    try {
+      const fullResponse = await fetch(url, { cache: 'no-cache' });
       if (!fullResponse.ok) {
         return false;
       }
@@ -148,14 +206,12 @@ export const validatePDFAccess = async (url) => {
       const signature = String.fromCharCode(...uint8Array.slice(0, 4));
       
       return signature === '%PDF';
+    } catch (fullError) {
+      console.warn('Full request validation failed:', fullError);
+      // In deployment, if we can't validate the signature, assume it's valid
+      // since the HEAD request succeeded
+      return true;
     }
-    
-    // Handle range request response
-    const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    const signature = String.fromCharCode(...uint8Array.slice(0, 4));
-    
-    return signature === '%PDF';
   } catch (error) {
     console.error('PDF validation failed:', error);
     return false;
@@ -196,13 +252,31 @@ export const openPDFInNewTab = async (url) => {
  */
 export const previewResume = async () => {
   try {
-    const baseUrl = window.location.origin;
-    const resumeUrl = `${baseUrl}/resume.pdf`;
+    // Get the base URL dynamically, but use absolute path for deployment
+    const resumeUrl = `${window.location.origin}/resume.pdf`;
     
-    const success = await openPDFInNewTab(resumeUrl);
+    // For development, also try with process.env.PUBLIC_URL
+    const altResumeUrl = `${process.env.PUBLIC_URL || ''}/resume.pdf`;
     
+    // Try primary URL first
+    let success = false;
+    try {
+      success = await openPDFInNewTab(resumeUrl);
+    } catch (error) {
+      console.warn('Primary URL failed for preview, trying alternative:', error);
+    }
+    
+    // If primary fails, try alternative URL
+    if (!success && altResumeUrl !== '/resume.pdf') {
+      try {
+        success = await openPDFInNewTab(altResumeUrl);
+      } catch (error) {
+        console.warn('Alternative URL also failed for preview:', error);
+      }
+    }
+    
+    // Final fallback: just open the URL directly
     if (!success) {
-      // Fallback to direct link
       window.open(resumeUrl, '_blank');
     }
     

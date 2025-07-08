@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+        .info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF Debug Test</h1>
+        <p>This page helps debug PDF access issues in deployment.</p>
+        
+        <div>
+            <button onclick="testPDFAccess()">Test PDF Access</button>
+            <button onclick="testDownload()">Test Download</button>
+            <button onclick="testPreview()">Test Preview</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div id="log" class="log"></div>
+        
+        <div>
+            <h3>Manual Tests:</h3>
+            <p>
+                <a href="/resume.pdf" target="_blank">Direct PDF Link</a><br>
+                <a href="./resume.pdf" target="_blank">Relative PDF Link</a><br>
+                <a href="/resume.pdf" download="resume.pdf">Download Link</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function testPDFAccess() {
+            log('Testing PDF access...', 'info');
+            
+            const baseUrl = window.location.origin;
+            const resumeUrl = `${baseUrl}/resume.pdf`;
+            
+            log(`Testing URL: ${resumeUrl}`, 'info');
+            
+            try {
+                // Test HEAD request
+                const headResponse = await fetch(resumeUrl, { method: 'HEAD' });
+                log(`HEAD request status: ${headResponse.status} ${headResponse.statusText}`, 
+                    headResponse.ok ? 'success' : 'error');
+                
+                if (headResponse.ok) {
+                    const contentType = headResponse.headers.get('content-type');
+                    const contentLength = headResponse.headers.get('content-length');
+                    log(`Content-Type: ${contentType}`, 'info');
+                    log(`Content-Length: ${contentLength}`, 'info');
+                }
+                
+                // Test GET request for first few bytes
+                const response = await fetch(resumeUrl, {
+                    headers: { 'Range': 'bytes=0-10' }
+                });
+                
+                log(`Range request status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const signature = String.fromCharCode(...uint8Array.slice(0, 4));
+                    log(`PDF signature: ${signature}`, signature === '%PDF' ? 'success' : 'error');
+                }
+                
+            } catch (error) {
+                log(`Error testing PDF access: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDownload() {
+            log('Testing download functionality...', 'info');
+            
+            const baseUrl = window.location.origin;
+            const resumeUrl = `${baseUrl}/resume.pdf`;
+            
+            try {
+                const response = await fetch(resumeUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                log(`Blob size: ${blob.size} bytes`, 'info');
+                log(`Blob type: ${blob.type}`, 'info');
+                
+                // Create download
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const blobUrl = window.URL.createObjectURL(pdfBlob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.setAttribute('download', 'test-resume.pdf');
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                window.URL.revokeObjectURL(blobUrl);
+                
+                log('Download initiated successfully', 'success');
+                
+            } catch (error) {
+                log(`Download failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPreview() {
+            log('Testing preview functionality...', 'info');
+            
+            const baseUrl = window.location.origin;
+            const resumeUrl = `${baseUrl}/resume.pdf`;
+            
+            try {
+                const newWindow = window.open(resumeUrl, '_blank');
+                if (newWindow) {
+                    log('Preview window opened successfully', 'success');
+                } else {
+                    log('Preview window blocked by popup blocker', 'error');
+                }
+            } catch (error) {
+                log(`Preview failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic test on page load
+        window.addEventListener('load', () => {
+            log('Page loaded. Starting automatic PDF access test...', 'info');
+            testPDFAccess();
+        });
+    </script>
+</body>
+</html>
