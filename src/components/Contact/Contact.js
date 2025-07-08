@@ -1,13 +1,13 @@
 import { motion } from 'framer-motion';
 import { FaMedium, FaXTwitter } from 'react-icons/fa6';
 import {
-    FiGithub,
-    FiInstagram,
-    FiLinkedin,
-    FiMail,
-    FiMapPin,
-    FiPhone,
-    FiShield
+  FiGithub,
+  FiInstagram,
+  FiLinkedin,
+  FiMail,
+  FiMapPin,
+  FiPhone,
+  FiShield
 } from 'react-icons/fi';
 import { useInView } from 'react-intersection-observer';
 import './Contact.css';
@@ -29,7 +29,7 @@ const Contact = () => {
       icon: FiPhone,
       label: 'Phone',
       value: '+91 97917 47058',
-      href: 'tel:+919791747058'
+      href: 'https://wa.me/919791747058?text=Hi%20Sakthi,%20I%20found%20your%20portfolio%20and%20would%20like%20to%20connect!'
     },
     {
       icon: FiMapPin,
