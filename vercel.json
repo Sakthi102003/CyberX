@@ -9,11 +9,15 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "inline; filename=\"Sakthimurugan_Resume.pdf\""
+          "value": "attachment; filename=\"Sakthimurugan_Resume.pdf\""
         },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
         },
         {
           "key": "Accept-Ranges",
