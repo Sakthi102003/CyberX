@@ -10,52 +10,24 @@
  */
 export const downloadPDF = async (url, filename) => {
   try {
-    // First try: Direct binary download
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/pdf',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-    
-    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-      // For IE
-      window.navigator.msSaveOrOpenBlob(blob, filename);
-      return true;
-    }
-
-    // For modern browsers
-    const blobUrl = window.URL.createObjectURL(blob);
+    // Create a direct link to trigger native browser download
     const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = filename;
+    link.href = url;
+    link.setAttribute('download', filename);
+    link.setAttribute('target', '_blank');
     link.style.display = 'none';
-    
-    // For iOS Safari
-    if (window.safari) {
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-    }
-    
     document.body.appendChild(link);
+    
+    // Trigger the download
     link.click();
+    
+    // Cleanup
     document.body.removeChild(link);
-    
-    // Delay revoking the object URL
-    setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl);
-    }, 1000);
-    
     return true;
   } catch (error) {
     console.error('Error downloading PDF:', error);
+    // If download fails, try opening in new tab
+    window.open(url, '_blank');
     return false;
   }
 };
@@ -66,22 +38,20 @@ export const downloadPDF = async (url, filename) => {
  */
 export const downloadResume = async () => {
   try {
-    // First try the direct download
-    const success = await downloadPDF('/resume.pdf', 'Sakthimurugan_Resume.pdf');
+    // Get the base URL dynamically
+    const baseUrl = window.location.origin;
+    const resumeUrl = `${baseUrl}/resume.pdf`;
+    
+    const success = await downloadPDF(resumeUrl, 'Sakthimurugan_Resume.pdf');
     
     if (!success) {
-      // If direct download fails, try opening in new tab
-      const newWindow = window.open('/resume.pdf', '_blank');
-      
-      if (!newWindow) {
-        throw new Error('Popup blocked');
-      }
+      throw new Error('Download failed');
     }
     
     return true;
   } catch (error) {
     console.error('Failed to download resume:', error);
-    alert('Unable to download resume. Please try opening it directly or contact me at sakthimurugan102003@gmail.com');
+    alert('Unable to download resume. Please try again or contact me at sakthimurugan102003@gmail.com');
     return false;
   }
 };
