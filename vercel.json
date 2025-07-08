@@ -1,0 +1,12 @@
+{
+  "routes": [
+    {
+      "src": "/resume.pdf",
+      "dest": "/resume.pdf",
+      "headers": {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": "attachment; filename=Sakthimurugan_Resume.pdf"
+      }
+    }
+  ]
+}

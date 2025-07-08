@@ -37,11 +37,26 @@ const Hero = () => {
   ];
 
   const handleDownloadResume = () => {
-    // Create a dummy resume download
     const link = document.createElement('a');
-    link.href = '/resume.pdf'; // You'll need to add your actual resume file
-    link.download = 'Resume.pdf';
-    link.click();
+    link.href = '/resume.pdf';
+    link.download = 'Sakthimurugan_Resume.pdf';
+    link.target = '_blank';
+    
+    // Check if file exists before downloading
+    fetch('/resume.pdf', { method: 'HEAD' })
+      .then(response => {
+        if (response.ok) {
+          link.click();
+        } else {
+          console.error('Resume file not found');
+          alert('Resume file is currently unavailable. Please contact me directly.');
+        }
+      })
+      .catch(error => {
+        console.error('Error checking resume file:', error);
+        // Fallback: try to download anyway
+        link.click();
+      });
   };
 
   return (
