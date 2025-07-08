@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { FaMedium, FaXTwitter } from 'react-icons/fa6';
 import { FiDownload, FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
+import { downloadResume } from '../../utils/downloadUtils';
 import TypewriterEffect from '../TypewriterEffect/TypewriterEffect';
 import './Hero.css';
 
@@ -37,32 +38,7 @@ const Hero = () => {
   ];
 
   const handleDownloadResume = async () => {
-    try {
-      // Fetch the PDF file as a blob to ensure proper binary handling
-      const response = await fetch('/resume.pdf');
-      
-      if (!response.ok) {
-        throw new Error('Resume file not found');
-      }
-      
-      const blob = await response.blob();
-      
-      // Create a blob URL and download
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'Sakthimurugan_Resume.pdf';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the blob URL
-      window.URL.revokeObjectURL(blobUrl);
-      
-    } catch (error) {
-      console.error('Error downloading resume:', error);
-      alert('Resume file is currently unavailable. Please contact me directly.');
-    }
+    await downloadResume();
   };
 
   return (
