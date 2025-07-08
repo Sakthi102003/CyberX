@@ -36,27 +36,33 @@ const Hero = () => {
     { icon: FaMedium, href: 'https://medium.com/sakthimurugan102003', label: 'Medium', color: '#00ab6c' }
   ];
 
-  const handleDownloadResume = () => {
-    const link = document.createElement('a');
-    link.href = '/resume.pdf';
-    link.download = 'Sakthimurugan_Resume.pdf';
-    link.target = '_blank';
-    
-    // Check if file exists before downloading
-    fetch('/resume.pdf', { method: 'HEAD' })
-      .then(response => {
-        if (response.ok) {
-          link.click();
-        } else {
-          console.error('Resume file not found');
-          alert('Resume file is currently unavailable. Please contact me directly.');
-        }
-      })
-      .catch(error => {
-        console.error('Error checking resume file:', error);
-        // Fallback: try to download anyway
-        link.click();
-      });
+  const handleDownloadResume = async () => {
+    try {
+      // Fetch the PDF file as a blob to ensure proper binary handling
+      const response = await fetch('/resume.pdf');
+      
+      if (!response.ok) {
+        throw new Error('Resume file not found');
+      }
+      
+      const blob = await response.blob();
+      
+      // Create a blob URL and download
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'Sakthimurugan_Resume.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+      
+    } catch (error) {
+      console.error('Error downloading resume:', error);
+      alert('Resume file is currently unavailable. Please contact me directly.');
+    }
   };
 
   return (
