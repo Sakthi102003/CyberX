@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick PDF Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0056b3; }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PDF Download Test</h1>
+        <p>Quick test to diagnose PDF download issues on your deployed site.</p>
+        
+        <div>
+            <button onclick="testBasicAccess()">Test PDF Access</button>
+            <button onclick="testDownload()">Test Download</button>
+            <button onclick="testPreview()">Test Preview</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div>
+            <h3>Direct Links:</h3>
+            <p>
+                <a href="/resume.pdf" target="_blank" style="color: #007bff; text-decoration: none;">📄 Open PDF directly</a><br>
+                <a href="/resume.pdf" download="resume.pdf" style="color: #007bff; text-decoration: none;">💾 Download PDF directly</a>
+            </p>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function testBasicAccess() {
+            addResult('Testing basic PDF access...', 'info');
+            
+            const pdfUrl = window.location.origin + '/resume.pdf';
+            addResult(`Testing URL: ${pdfUrl}`, 'info');
+            
+            try {
+                const response = await fetch(pdfUrl, { method: 'HEAD' });
+                if (response.ok) {
+                    addResult(`✅ PDF is accessible (Status: ${response.status})`, 'success');
+                    addResult(`Content-Type: ${response.headers.get('content-type')}`, 'info');
+                    addResult(`Content-Length: ${response.headers.get('content-length')} bytes`, 'info');
+                } else {
+                    addResult(`❌ PDF not accessible (Status: ${response.status} ${response.statusText})`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Error accessing PDF: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDownload() {
+            addResult('Testing download functionality...', 'info');
+            
+            const pdfUrl = window.location.origin + '/resume.pdf';
+            
+            try {
+                const response = await fetch(pdfUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                addResult(`📦 Downloaded blob: ${blob.size} bytes`, 'info');
+                
+                // Create download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test-resume.pdf';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                addResult('✅ Download initiated successfully!', 'success');
+                
+            } catch (error) {
+                addResult(`❌ Download failed: ${error.message}`, 'error');
+                
+                // Try fallback method
+                try {
+                    addResult('Trying fallback download method...', 'info');
+                    const a = document.createElement('a');
+                    a.href = pdfUrl;
+                    a.download = 'fallback-resume.pdf';
+                    a.target = '_blank';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    addResult('✅ Fallback download initiated', 'success');
+                } catch (fallbackError) {
+                    addResult(`❌ Fallback also failed: ${fallbackError.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testPreview() {
+            addResult('Testing preview functionality...', 'info');
+            
+            const pdfUrl = window.location.origin + '/resume.pdf';
+            
+            try {
+                const newWindow = window.open(pdfUrl, '_blank');
+                if (newWindow) {
+                    addResult('✅ Preview window opened successfully!', 'success');
+                } else {
+                    addResult('⚠️ Preview blocked by popup blocker', 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Preview failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            addResult('PDF Test tool loaded. Click buttons above to test.', 'info');
+        });
+    </script>
+</body>
+</html>

@@ -125,6 +125,19 @@ export const downloadResume = async () => {
       }
     }
     
+    // If both fail, try simple download approaches
+    if (!success) {
+      console.warn('Advanced download failed, trying simple methods...');
+      
+      // Try simple download
+      success = simpleDownload(resumeUrl, 'Sakthimurugan_Resume.pdf');
+      
+      // If simple download fails, try navigation
+      if (!success) {
+        success = navigateToFile(resumeUrl);
+      }
+    }
+    
     if (!success) {
       throw new Error('All download attempts failed');
     }
@@ -284,6 +297,49 @@ export const previewResume = async () => {
   } catch (error) {
     console.error('Failed to preview resume:', error);
     alert('Unable to preview resume. Please try downloading it instead.');
+    return false;
+  }
+};
+
+/**
+ * Simple fallback download function that uses the most basic approach
+ * This is often more reliable in deployment environments
+ * @param {string} url - The URL of the file to download
+ * @param {string} filename - The desired filename
+ */
+export const simpleDownload = (url, filename) => {
+  try {
+    // Create a temporary anchor element
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    
+    // Force download behavior
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    return true;
+  } catch (error) {
+    console.error('Simple download failed:', error);
+    return false;
+  }
+};
+
+/**
+ * Even simpler approach - just navigate to the file
+ * @param {string} url - The URL of the file
+ */
+export const navigateToFile = (url) => {
+  try {
+    window.location.href = url;
+    return true;
+  } catch (error) {
+    console.error('Navigation failed:', error);
     return false;
   }
 };
