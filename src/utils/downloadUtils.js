@@ -10,46 +10,52 @@
  */
 export const downloadPDF = async (url, filename) => {
   try {
-    // Method 1: Fetch with proper headers
+    // First try: Direct binary download
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/pdf',
-        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/pdf',
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
     
-    // Get the blob directly without content-type check to avoid CORS issues
-    const blob = await response.blob();
-    
-    // Create download link with forced download attribute
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+      // For IE
+      window.navigator.msSaveOrOpenBlob(blob, filename);
+      return true;
+    }
+
+    // For modern browsers
     const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
     link.download = filename;
-    link.target = '_blank'; // Open in new tab as fallback
-    link.rel = 'noopener noreferrer';
+    link.style.display = 'none';
     
-    // Trigger download
+    // For iOS Safari
+    if (window.safari) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    
     document.body.appendChild(link);
     link.click();
-    
-    // Clean up
     document.body.removeChild(link);
+    
+    // Delay revoking the object URL
     setTimeout(() => {
       window.URL.revokeObjectURL(blobUrl);
-    }, 100);
+    }, 1000);
     
     return true;
   } catch (error) {
     console.error('Error downloading PDF:', error);
-    
-    // Fallback: Try opening in new tab
-    window.open(url, '_blank');
     return false;
   }
 };
@@ -59,13 +65,25 @@ export const downloadPDF = async (url, filename) => {
  * @returns {Promise<boolean>} - Returns true if download was successful
  */
 export const downloadResume = async () => {
-  const success = await downloadPDF('/resume.pdf', 'Sakthimurugan_Resume.pdf');
-  
-  if (!success) {
-    alert('Resume download is currently unavailable. Please contact me directly at sakthimurugan102003@gmail.com');
+  try {
+    // First try the direct download
+    const success = await downloadPDF('/resume.pdf', 'Sakthimurugan_Resume.pdf');
+    
+    if (!success) {
+      // If direct download fails, try opening in new tab
+      const newWindow = window.open('/resume.pdf', '_blank');
+      
+      if (!newWindow) {
+        throw new Error('Popup blocked');
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to download resume:', error);
+    alert('Unable to download resume. Please try opening it directly or contact me at sakthimurugan102003@gmail.com');
+    return false;
   }
-  
-  return success;
 };
 
 /**
