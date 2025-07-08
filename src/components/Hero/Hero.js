@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaMedium, FaXTwitter } from 'react-icons/fa6';
-import { FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
+import { FiDownload, FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
 import TypewriterEffect from '../TypewriterEffect/TypewriterEffect';
 import './Hero.css';
 
@@ -110,6 +110,16 @@ const Hero = () => {
               >
                 <FiMail />
                 Get In Touch
+              </motion.a>
+              <motion.a
+                className="cta-button secondary"
+                href="/resume.pdf"
+                download="Sakthimurugan_S_Resume.pdf"
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(16, 185, 129, 0.3)' }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FiDownload />
+                Download Resume
               </motion.a>
             </motion.div>
 

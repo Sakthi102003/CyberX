@@ -241,12 +241,15 @@
 .cta-button.secondary {
   background: transparent;
   color: var(--text-primary);
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--cyber-green);
+  position: relative;
 }
 
 .cta-button.secondary:hover {
-  border-color: var(--accent-primary);
-  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--cyber-green);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--cyber-green);
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
 }
 
 .hero-social {
@@ -418,6 +421,18 @@
   .cta-button {
     padding: 0.8rem 1.5rem;
     font-size: 0.9rem;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .hero-actions .cta-button {
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
   }
   
   .hero-3d-container {
