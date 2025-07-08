@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaMedium, FaXTwitter } from 'react-icons/fa6';
-import { FiDownload, FiEye, FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
-import { downloadResume, previewResume } from '../../utils/downloadUtils';
+import { FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
 import TypewriterEffect from '../TypewriterEffect/TypewriterEffect';
 import './Hero.css';
 
@@ -36,114 +35,6 @@ const Hero = () => {
     { icon: FaXTwitter, href: 'https://twitter.com/Sakthimurugan_1', label: 'X (Twitter)', color: '#000' },
     { icon: FaMedium, href: 'https://medium.com/sakthimurugan102003', label: 'Medium', color: '#00ab6c' }
   ];
-
-  const handleDownloadResume = async () => {
-    try {
-      const success = await downloadResume();
-      if (success) {
-        console.log('Resume download successful');
-      }
-    } catch (error) {
-      console.error('Resume download failed:', error);
-      
-      // Try emergency handler as fallback
-      try {
-        console.log('Attempting emergency download...');
-        // Simple emergency download without eval
-        const emergencyDownload = () => {
-          const urls = [
-            `${window.location.origin}/resume.pdf`,
-            '/resume.pdf',
-            './resume.pdf'
-          ];
-          
-          for (const url of urls) {
-            try {
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'Sakthimurugan_Resume.pdf';
-              a.target = '_blank';
-              a.rel = 'noopener noreferrer';
-              a.style.display = 'none';
-              
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              
-              console.log('Emergency download initiated from:', url);
-              return true;
-            } catch (err) {
-              console.warn('Emergency download failed for:', url, err);
-            }
-          }
-          
-          // Ultimate fallback - navigate to the PDF
-          try {
-            window.location.href = `${window.location.origin}/resume.pdf`;
-            return true;
-          } catch (err) {
-            console.error('All emergency download methods failed:', err);
-            return false;
-          }
-        };
-        
-        const emergencySuccess = emergencyDownload();
-        if (!emergencySuccess) {
-          throw new Error('Emergency handler also failed');
-        }
-      } catch (emergencyError) {
-        console.error('Emergency download also failed:', emergencyError);
-        alert('Failed to download resume. Please try again or contact me directly at sakthimurugan102003@gmail.com');
-      }
-    }
-  };
-
-  const handlePreviewResume = async () => {
-    try {
-      const success = await previewResume();
-      if (success) {
-        console.log('Resume preview successful');
-      }
-    } catch (error) {
-      console.error('Resume preview failed:', error);
-      
-      // Try emergency handler as fallback
-      try {
-        console.log('Attempting emergency preview...');
-        // Simple emergency preview without eval
-        const emergencyPreview = () => {
-          const urls = [
-            `${window.location.origin}/resume.pdf`,
-            '/resume.pdf',
-            './resume.pdf'
-          ];
-          
-          for (const url of urls) {
-            try {
-              const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-              if (newWindow) {
-                console.log('Emergency preview opened from:', url);
-                return true;
-              }
-            } catch (err) {
-              console.warn('Emergency preview failed for:', url, err);
-            }
-          }
-          
-          console.error('All emergency preview methods failed');
-          return false;
-        };
-        
-        const emergencySuccess = emergencyPreview();
-        if (!emergencySuccess) {
-          throw new Error('Emergency handler also failed');
-        }
-      } catch (emergencyError) {
-        console.error('Emergency preview also failed:', emergencyError);
-        alert('Failed to preview resume. Please try the download option or contact me directly at sakthimurugan102003@gmail.com');
-      }
-    }
-  };
 
   return (
     <section className="hero">
@@ -220,26 +111,6 @@ const Hero = () => {
                 <FiMail />
                 Get In Touch
               </motion.a>
-
-              <motion.button
-                className="cta-button secondary"
-                onClick={handlePreviewResume}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FiEye />
-                Preview Resume
-              </motion.button>
-
-              <motion.button
-                className="cta-button secondary"
-                onClick={handleDownloadResume}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FiDownload />
-                Download Resume
-              </motion.button>
             </motion.div>
 
             <motion.div className="hero-social" variants={itemVariants}>
