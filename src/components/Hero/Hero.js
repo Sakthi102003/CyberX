@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { FaMedium, FaXTwitter } from 'react-icons/fa6';
-import { FiDownload, FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
-import { downloadResume } from '../../utils/downloadUtils';
+import { FiDownload, FiEye, FiGithub, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
+import { downloadResume, previewResume } from '../../utils/downloadUtils';
 import TypewriterEffect from '../TypewriterEffect/TypewriterEffect';
 import './Hero.css';
 
@@ -39,6 +39,10 @@ const Hero = () => {
 
   const handleDownloadResume = async () => {
     await downloadResume();
+  };
+
+  const handlePreviewResume = async () => {
+    await previewResume();
   };
 
   return (
@@ -116,6 +120,16 @@ const Hero = () => {
                 <FiMail />
                 Get In Touch
               </motion.a>
+
+              <motion.button
+                className="cta-button secondary"
+                onClick={handlePreviewResume}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FiEye />
+                Preview Resume
+              </motion.button>
 
               <motion.button
                 className="cta-button secondary"
