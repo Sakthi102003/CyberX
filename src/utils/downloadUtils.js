@@ -96,50 +96,54 @@ export const downloadPDF = async (url, filename) => {
  */
 export const downloadResume = async () => {
   try {
-    // Get the base URL dynamically, but use absolute path for deployment
-    const resumeUrl = `${window.location.origin}/resume.pdf`;
+    // Multiple URL strategies for better deployment compatibility
+    const urls = [
+      `${window.location.origin}/resume.pdf`,
+      `${window.location.origin}/build/resume.pdf`,
+      `/resume.pdf`,
+      `./resume.pdf`,
+      `${process.env.PUBLIC_URL || ''}/resume.pdf`
+    ].filter((url, index, arr) => arr.indexOf(url) === index); // Remove duplicates
     
-    // For development, also try with process.env.PUBLIC_URL
-    const altResumeUrl = `${process.env.PUBLIC_URL || ''}/resume.pdf`;
-    
-    // Try primary URL first
     let success = false;
-    try {
-      const isValid = await validatePDFAccess(resumeUrl);
-      if (isValid) {
-        success = await downloadPDF(resumeUrl, 'Sakthimurugan_Resume.pdf');
-      }
-    } catch (error) {
-      console.warn('Primary URL failed, trying alternative:', error);
-    }
+    let lastError = null;
     
-    // If primary fails, try alternative URL
-    if (!success && altResumeUrl !== '/resume.pdf') {
+    // Try each URL until one works
+    for (const url of urls) {
       try {
-        const isValid = await validatePDFAccess(altResumeUrl);
+        console.log(`Attempting to download from: ${url}`);
+        
+        // Check if PDF is accessible
+        const isValid = await validatePDFAccess(url);
         if (isValid) {
-          success = await downloadPDF(altResumeUrl, 'Sakthimurugan_Resume.pdf');
+          success = await downloadPDF(url, 'Sakthimurugan_Resume.pdf');
+          if (success) {
+            console.log(`Successfully downloaded from: ${url}`);
+            break;
+          }
         }
       } catch (error) {
-        console.warn('Alternative URL also failed:', error);
+        lastError = error;
+        console.warn(`Failed to download from ${url}:`, error);
       }
     }
     
-    // If both fail, try simple download approaches
+    // If all URLs fail, try simple methods with the primary URL
     if (!success) {
-      console.warn('Advanced download failed, trying simple methods...');
+      console.warn('All URL attempts failed, trying simple methods...');
+      const primaryUrl = `${window.location.origin}/resume.pdf`;
       
       // Try simple download
-      success = simpleDownload(resumeUrl, 'Sakthimurugan_Resume.pdf');
+      success = simpleDownload(primaryUrl, 'Sakthimurugan_Resume.pdf');
       
       // If simple download fails, try navigation
       if (!success) {
-        success = navigateToFile(resumeUrl);
+        success = navigateToFile(primaryUrl);
       }
     }
     
     if (!success) {
-      throw new Error('All download attempts failed');
+      throw lastError || new Error('All download attempts failed');
     }
     
     return true;
@@ -169,64 +173,79 @@ export const downloadResume = async () => {
  */
 export const validatePDFAccess = async (url) => {
   try {
+    console.log(`Validating PDF access for: ${url}`);
+    
     // First, check with HEAD request for basic accessibility
     const headResponse = await fetch(url, { 
       method: 'HEAD',
-      cache: 'no-cache' // Force fresh request for validation
+      cache: 'no-cache', // Force fresh request for validation
+      headers: {
+        'Accept': 'application/pdf,*/*',
+        'Cache-Control': 'no-cache'
+      }
     });
     
     if (!headResponse.ok) {
       console.error('PDF HEAD request failed:', headResponse.status, headResponse.statusText);
-      return false;
+      
+      // If HEAD fails, try a GET request (some servers don't support HEAD)
+      try {
+        const getResponse = await fetch(url, { 
+          method: 'GET',
+          cache: 'no-cache',
+          headers: {
+            'Accept': 'application/pdf,*/*',
+            'Cache-Control': 'no-cache',
+            'Range': 'bytes=0-1' // Request just 1 byte
+          }
+        });
+        
+        if (!getResponse.ok) {
+          console.error('PDF GET request also failed:', getResponse.status, getResponse.statusText);
+          return false;
+        }
+        
+        console.log('PDF accessible via GET request');
+        return true;
+      } catch (getError) {
+        console.error('Both HEAD and GET requests failed:', getError);
+        return false;
+      }
     }
     
     const contentType = headResponse.headers.get('content-type');
+    const contentLength = headResponse.headers.get('content-length');
+    
+    console.log(`PDF Headers - Content-Type: ${contentType}, Content-Length: ${contentLength}`);
+    
     if (!contentType || !contentType.includes('application/pdf')) {
-      console.warn('Unexpected content type:', contentType, 'but proceeding...');
-      // Don't fail immediately for content type in deployment
+      console.warn('Unexpected content type:', contentType, 'but proceeding for deployment compatibility...');
     }
     
-    // Try to get a small portion of the file to validate PDF signature
+    // If we get here, the file is accessible
+    console.log('PDF validation successful');
+    return true;
+    
+  } catch (error) {
+    console.error('PDF validation failed:', error);
+    
+    // In deployment environments, network errors might be transient
+    // Try one more time with a simpler request
     try {
-      const response = await fetch(url, {
-        headers: { 'Range': 'bytes=0-10' },
+      console.log('Attempting simple validation...');
+      const simpleResponse = await fetch(url, { 
+        method: 'GET',
         cache: 'no-cache'
       });
       
-      if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const signature = String.fromCharCode(...uint8Array.slice(0, 4));
-        
-        if (signature === '%PDF') {
-          return true;
-        }
+      if (simpleResponse.ok) {
+        console.log('Simple PDF validation successful');
+        return true;
       }
-    } catch (rangeError) {
-      console.warn('Range request failed, trying full request:', rangeError);
+    } catch (simpleError) {
+      console.error('Simple validation also failed:', simpleError);
     }
     
-    // If range request fails, try regular request but limit the read
-    try {
-      const fullResponse = await fetch(url, { cache: 'no-cache' });
-      if (!fullResponse.ok) {
-        return false;
-      }
-      
-      const blob = await fullResponse.blob();
-      const arrayBuffer = await blob.slice(0, 10).arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const signature = String.fromCharCode(...uint8Array.slice(0, 4));
-      
-      return signature === '%PDF';
-    } catch (fullError) {
-      console.warn('Full request validation failed:', fullError);
-      // In deployment, if we can't validate the signature, assume it's valid
-      // since the HEAD request succeeded
-      return true;
-    }
-  } catch (error) {
-    console.error('PDF validation failed:', error);
     return false;
   }
 };
@@ -265,38 +284,69 @@ export const openPDFInNewTab = async (url) => {
  */
 export const previewResume = async () => {
   try {
-    // Get the base URL dynamically, but use absolute path for deployment
-    const resumeUrl = `${window.location.origin}/resume.pdf`;
+    // Multiple URL strategies for better deployment compatibility
+    const urls = [
+      `${window.location.origin}/resume.pdf`,
+      `${window.location.origin}/build/resume.pdf`,
+      `/resume.pdf`,
+      `./resume.pdf`,
+      `${process.env.PUBLIC_URL || ''}/resume.pdf`
+    ].filter((url, index, arr) => arr.indexOf(url) === index); // Remove duplicates
     
-    // For development, also try with process.env.PUBLIC_URL
-    const altResumeUrl = `${process.env.PUBLIC_URL || ''}/resume.pdf`;
-    
-    // Try primary URL first
     let success = false;
-    try {
-      success = await openPDFInNewTab(resumeUrl);
-    } catch (error) {
-      console.warn('Primary URL failed for preview, trying alternative:', error);
-    }
+    let lastError = null;
     
-    // If primary fails, try alternative URL
-    if (!success && altResumeUrl !== '/resume.pdf') {
+    // Try each URL until one works
+    for (const url of urls) {
       try {
-        success = await openPDFInNewTab(altResumeUrl);
+        console.log(`Attempting to preview from: ${url}`);
+        success = await openPDFInNewTab(url);
+        if (success) {
+          console.log(`Successfully opened preview from: ${url}`);
+          break;
+        }
       } catch (error) {
-        console.warn('Alternative URL also failed for preview:', error);
+        lastError = error;
+        console.warn(`Failed to preview from ${url}:`, error);
       }
     }
     
-    // Final fallback: just open the URL directly
+    // Final fallback: just open the primary URL directly without validation
     if (!success) {
-      window.open(resumeUrl, '_blank');
+      console.log('All validation attempts failed, trying direct open...');
+      try {
+        const primaryUrl = `${window.location.origin}/resume.pdf`;
+        const newWindow = window.open(primaryUrl, '_blank');
+        if (newWindow) {
+          success = true;
+          console.log('Direct open successful');
+        } else {
+          console.warn('Direct open failed - popup blocked');
+        }
+      } catch (directError) {
+        console.error('Direct open also failed:', directError);
+      }
+    }
+    
+    if (!success) {
+      throw lastError || new Error('All preview attempts failed');
     }
     
     return true;
   } catch (error) {
     console.error('Failed to preview resume:', error);
-    alert('Unable to preview resume. Please try downloading it instead.');
+    
+    // User-friendly error message
+    let errorMessage = 'Unable to preview resume. ';
+    if (error.message.includes('Popup blocked')) {
+      errorMessage += 'Pop-ups are blocked in your browser. Please allow pop-ups for this site or try downloading the resume instead.';
+    } else if (error.message.includes('not accessible')) {
+      errorMessage += 'The resume file is currently unavailable. Please try downloading it instead.';
+    } else {
+      errorMessage += 'Please try downloading the resume instead.';
+    }
+    
+    alert(errorMessage);
     return false;
   }
 };

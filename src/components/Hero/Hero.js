@@ -45,7 +45,56 @@ const Hero = () => {
       }
     } catch (error) {
       console.error('Resume download failed:', error);
-      alert('Failed to download resume. Please try again or contact me directly.');
+      
+      // Try emergency handler as fallback
+      try {
+        console.log('Attempting emergency download...');
+        // Simple emergency download without eval
+        const emergencyDownload = () => {
+          const urls = [
+            `${window.location.origin}/resume.pdf`,
+            '/resume.pdf',
+            './resume.pdf'
+          ];
+          
+          for (const url of urls) {
+            try {
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'Sakthimurugan_Resume.pdf';
+              a.target = '_blank';
+              a.rel = 'noopener noreferrer';
+              a.style.display = 'none';
+              
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              
+              console.log('Emergency download initiated from:', url);
+              return true;
+            } catch (err) {
+              console.warn('Emergency download failed for:', url, err);
+            }
+          }
+          
+          // Ultimate fallback - navigate to the PDF
+          try {
+            window.location.href = `${window.location.origin}/resume.pdf`;
+            return true;
+          } catch (err) {
+            console.error('All emergency download methods failed:', err);
+            return false;
+          }
+        };
+        
+        const emergencySuccess = emergencyDownload();
+        if (!emergencySuccess) {
+          throw new Error('Emergency handler also failed');
+        }
+      } catch (emergencyError) {
+        console.error('Emergency download also failed:', emergencyError);
+        alert('Failed to download resume. Please try again or contact me directly at sakthimurugan102003@gmail.com');
+      }
     }
   };
 
@@ -57,7 +106,42 @@ const Hero = () => {
       }
     } catch (error) {
       console.error('Resume preview failed:', error);
-      alert('Failed to preview resume. Please try the download option or contact me directly.');
+      
+      // Try emergency handler as fallback
+      try {
+        console.log('Attempting emergency preview...');
+        // Simple emergency preview without eval
+        const emergencyPreview = () => {
+          const urls = [
+            `${window.location.origin}/resume.pdf`,
+            '/resume.pdf',
+            './resume.pdf'
+          ];
+          
+          for (const url of urls) {
+            try {
+              const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+              if (newWindow) {
+                console.log('Emergency preview opened from:', url);
+                return true;
+              }
+            } catch (err) {
+              console.warn('Emergency preview failed for:', url, err);
+            }
+          }
+          
+          console.error('All emergency preview methods failed');
+          return false;
+        };
+        
+        const emergencySuccess = emergencyPreview();
+        if (!emergencySuccess) {
+          throw new Error('Emergency handler also failed');
+        }
+      } catch (emergencyError) {
+        console.error('Emergency preview also failed:', emergencyError);
+        alert('Failed to preview resume. Please try the download option or contact me directly at sakthimurugan102003@gmail.com');
+      }
     }
   };
 

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Deployment Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .urls-list {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .urls-list li {
+            margin: 5px 0;
+            font-family: monospace;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+        .status-pending { background: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PDF Deployment Test Suite</h1>
+        <p>Comprehensive testing tool for PDF download and preview functionality in deployment environments.</p>
+        
+        <div class="test-section">
+            <h3>📍 Environment Information</h3>
+            <div id="env-info">
+                <p><strong>Current URL:</strong> <span id="current-url"></span></p>
+                <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+                <p><strong>Protocol:</strong> <span id="protocol"></span></p>
+                <p><strong>Host:</strong> <span id="host"></span></p>
+                <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔗 URL Testing</h3>
+            <p>Testing various URL patterns that might work in deployment:</p>
+            <div class="urls-list">
+                <ul id="urls-list"></ul>
+            </div>
+            <button onclick="testAllUrls()">Test All URLs</button>
+            <button onclick="clearUrlResults()">Clear Results</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📄 PDF Access Tests</h3>
+            <button onclick="testPDFAccess()">Test PDF Access</button>
+            <button onclick="testPDFHeaders()">Test PDF Headers</button>
+            <button onclick="testPDFContent()">Test PDF Content</button>
+            <button onclick="testCORS()">Test CORS</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>💾 Download Tests</h3>
+            <button onclick="testBlobDownload()">Test Blob Download</button>
+            <button onclick="testSimpleDownload()">Test Simple Download</button>
+            <button onclick="testFallbackDownload()">Test Fallback Download</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>👁️ Preview Tests</h3>
+            <button onclick="testNewTabPreview()">Test New Tab Preview</button>
+            <button onclick="testEmbedPreview()">Test Embed Preview</button>
+            <button onclick="testIframePreview()">Test iFrame Preview</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Advanced Diagnostics</h3>
+            <button onclick="testNetworkConditions()">Test Network Conditions</button>
+            <button onclick="testBrowserSupport()">Test Browser Support</button>
+            <button onclick="testSecurityHeaders()">Test Security Headers</button>
+            <button onclick="exportTestResults()">Export Results</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Test Results</h3>
+            <div id="results" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const testResults = [];
+        
+        // Initialize environment info
+        function initEnvironmentInfo() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('user-agent').textContent = navigator.userAgent;
+            document.getElementById('protocol').textContent = window.location.protocol;
+            document.getElementById('host').textContent = window.location.host;
+            document.getElementById('timestamp').textContent = new Date().toISOString();
+        }
+        
+        // Generate test URLs
+        function generateTestUrls() {
+            const base = window.location.origin;
+            const urls = [
+                `${base}/resume.pdf`,
+                `${base}/build/resume.pdf`,
+                `${base}/public/resume.pdf`,
+                `/resume.pdf`,
+                `./resume.pdf`,
+                `resume.pdf`,
+                `${window.location.href.replace(/\/[^/]*$/, '')}/resume.pdf`
+            ];
+            
+            const urlsList = document.getElementById('urls-list');
+            urlsList.innerHTML = urls.map(url => 
+                `<li><span class="status-indicator status-pending" id="status-${btoa(url)}"></span>${url}</li>`
+            ).join('');
+            
+            return urls;
+        }
+        
+        // Log function with styling
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = {
+                timestamp,
+                message,
+                type,
+                url: window.location.href
+            };
+            
+            testResults.push(logEntry);
+            
+            const colorClass = type === 'error' ? 'error' : 
+                              type === 'success' ? 'success' : 
+                              type === 'warning' ? 'warning' : 'info';
+            
+            const logLine = `[${timestamp}] ${message}\n`;
+            const span = document.createElement('span');
+            span.className = colorClass;
+            span.textContent = logLine;
+            resultsDiv.appendChild(span);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        // Test all URLs
+        async function testAllUrls() {
+            log('🔄 Testing all URLs...', 'info');
+            const urls = generateTestUrls();
+            
+            for (const url of urls) {
+                const statusId = `status-${btoa(url)}`;
+                const statusEl = document.getElementById(statusId);
+                
+                try {
+                    log(`Testing: ${url}`, 'info');
+                    const response = await fetch(url, { method: 'HEAD' });
+                    
+                    if (response.ok) {
+                        log(`✅ ${url} - OK (${response.status})`, 'success');
+                        statusEl.className = 'status-indicator status-success';
+                    } else {
+                        log(`❌ ${url} - Failed (${response.status})`, 'error');
+                        statusEl.className = 'status-indicator status-error';
+                    }
+                } catch (error) {
+                    log(`❌ ${url} - Error: ${error.message}`, 'error');
+                    statusEl.className = 'status-indicator status-error';
+                }
+            }
+            
+            log('🏁 URL testing completed', 'info');
+        }
+        
+        // Test PDF access
+        async function testPDFAccess() {
+            log('🔄 Testing PDF access...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                if (response.ok) {
+                    log(`✅ PDF is accessible (${response.status})`, 'success');
+                    log(`Headers: ${JSON.stringify(Object.fromEntries(response.headers))}`, 'info');
+                } else {
+                    log(`❌ PDF not accessible (${response.status})`, 'error');
+                }
+            } catch (error) {
+                log(`❌ PDF access failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test PDF headers
+        async function testPDFHeaders() {
+            log('🔄 Testing PDF headers...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                if (response.ok) {
+                    const headers = Object.fromEntries(response.headers);
+                    log(`Content-Type: ${headers['content-type'] || 'Not set'}`, 'info');
+                    log(`Content-Length: ${headers['content-length'] || 'Not set'}`, 'info');
+                    log(`Content-Disposition: ${headers['content-disposition'] || 'Not set'}`, 'info');
+                    log(`Access-Control-Allow-Origin: ${headers['access-control-allow-origin'] || 'Not set'}`, 'info');
+                    log(`Cache-Control: ${headers['cache-control'] || 'Not set'}`, 'info');
+                } else {
+                    log(`❌ Cannot get headers (${response.status})`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Header test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test PDF content
+        async function testPDFContent() {
+            log('🔄 Testing PDF content...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    log(`✅ PDF blob size: ${blob.size} bytes`, 'success');
+                    log(`PDF blob type: ${blob.type}`, 'info');
+                    
+                    // Check PDF signature
+                    const arrayBuffer = await blob.slice(0, 10).arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const signature = String.fromCharCode(...uint8Array.slice(0, 4));
+                    
+                    if (signature === '%PDF') {
+                        log('✅ Valid PDF signature detected', 'success');
+                    } else {
+                        log(`⚠️ Invalid PDF signature: ${signature}`, 'warning');
+                    }
+                } else {
+                    log(`❌ Cannot get PDF content (${response.status})`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Content test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test CORS
+        async function testCORS() {
+            log('🔄 Testing CORS...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET'
+                    }
+                });
+                
+                log(`CORS preflight status: ${response.status}`, 'info');
+                const allowOrigin = response.headers.get('Access-Control-Allow-Origin');
+                log(`Access-Control-Allow-Origin: ${allowOrigin || 'Not set'}`, allowOrigin ? 'success' : 'warning');
+                
+            } catch (error) {
+                log(`❌ CORS test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test blob download
+        async function testBlobDownload() {
+            log('🔄 Testing blob download...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = 'test-blob-resume.pdf';
+                a.style.display = 'none';
+                
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                window.URL.revokeObjectURL(blobUrl);
+                log('✅ Blob download initiated', 'success');
+                
+            } catch (error) {
+                log(`❌ Blob download failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test simple download
+        async function testSimpleDownload() {
+            log('🔄 Testing simple download...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test-simple-resume.pdf';
+                a.target = '_blank';
+                a.style.display = 'none';
+                
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                log('✅ Simple download initiated', 'success');
+                
+            } catch (error) {
+                log(`❌ Simple download failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test fallback download
+        async function testFallbackDownload() {
+            log('🔄 Testing fallback download...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                window.location.href = url;
+                log('✅ Fallback download initiated (page navigation)', 'success');
+                
+            } catch (error) {
+                log(`❌ Fallback download failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test new tab preview
+        async function testNewTabPreview() {
+            log('🔄 Testing new tab preview...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const newWindow = window.open(url, '_blank');
+                if (newWindow) {
+                    log('✅ New tab preview opened', 'success');
+                } else {
+                    log('⚠️ New tab blocked by popup blocker', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ New tab preview failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test embed preview
+        async function testEmbedPreview() {
+            log('🔄 Testing embed preview...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const embed = document.createElement('embed');
+                embed.src = url;
+                embed.type = 'application/pdf';
+                embed.style.width = '100%';
+                embed.style.height = '400px';
+                embed.style.border = '1px solid #ccc';
+                
+                const container = document.createElement('div');
+                container.appendChild(embed);
+                
+                // Add after results div
+                resultsDiv.parentNode.insertBefore(container, resultsDiv.nextSibling);
+                
+                log('✅ Embed preview added to page', 'success');
+                
+                // Remove after 10 seconds
+                setTimeout(() => {
+                    container.remove();
+                    log('ℹ️ Embed preview removed', 'info');
+                }, 10000);
+                
+            } catch (error) {
+                log(`❌ Embed preview failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test iframe preview
+        async function testIframePreview() {
+            log('🔄 Testing iframe preview...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.style.width = '100%';
+                iframe.style.height = '400px';
+                iframe.style.border = '1px solid #ccc';
+                
+                const container = document.createElement('div');
+                container.appendChild(iframe);
+                
+                // Add after results div
+                resultsDiv.parentNode.insertBefore(container, resultsDiv.nextSibling);
+                
+                log('✅ iFrame preview added to page', 'success');
+                
+                // Remove after 10 seconds
+                setTimeout(() => {
+                    container.remove();
+                    log('ℹ️ iFrame preview removed', 'info');
+                }, 10000);
+                
+            } catch (error) {
+                log(`❌ iFrame preview failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test network conditions
+        async function testNetworkConditions() {
+            log('🔄 Testing network conditions...', 'info');
+            
+            // Test connection
+            if (navigator.onLine) {
+                log('✅ Browser reports online', 'success');
+            } else {
+                log('❌ Browser reports offline', 'error');
+            }
+            
+            // Test connection speed
+            const start = performance.now();
+            try {
+                await fetch(`${window.location.origin}/favicon.ico`, { cache: 'no-cache' });
+                const end = performance.now();
+                log(`Network latency: ${Math.round(end - start)}ms`, 'info');
+            } catch (error) {
+                log(`Network test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test browser support
+        function testBrowserSupport() {
+            log('🔄 Testing browser support...', 'info');
+            
+            // Test fetch API
+            if (typeof fetch !== 'undefined') {
+                log('✅ Fetch API supported', 'success');
+            } else {
+                log('❌ Fetch API not supported', 'error');
+            }
+            
+            // Test Blob API
+            if (typeof Blob !== 'undefined') {
+                log('✅ Blob API supported', 'success');
+            } else {
+                log('❌ Blob API not supported', 'error');
+            }
+            
+            // Test URL API
+            if (typeof URL !== 'undefined' && URL.createObjectURL) {
+                log('✅ URL API supported', 'success');
+            } else {
+                log('❌ URL API not supported', 'error');
+            }
+            
+            // Test download attribute
+            const a = document.createElement('a');
+            if (typeof a.download !== 'undefined') {
+                log('✅ Download attribute supported', 'success');
+            } else {
+                log('❌ Download attribute not supported', 'error');
+            }
+        }
+        
+        // Test security headers
+        async function testSecurityHeaders() {
+            log('🔄 Testing security headers...', 'info');
+            const url = `${window.location.origin}/resume.pdf`;
+            
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                const headers = Object.fromEntries(response.headers);
+                
+                const securityHeaders = [
+                    'x-frame-options',
+                    'x-content-type-options',
+                    'x-xss-protection',
+                    'content-security-policy',
+                    'strict-transport-security'
+                ];
+                
+                securityHeaders.forEach(header => {
+                    const value = headers[header];
+                    if (value) {
+                        log(`${header}: ${value}`, 'info');
+                    } else {
+                        log(`${header}: Not set`, 'warning');
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ Security headers test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Export test results
+        function exportTestResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                results: testResults
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pdf-test-results-${Date.now()}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            log('✅ Test results exported', 'success');
+        }
+        
+        // Clear URL results
+        function clearUrlResults() {
+            const statusEls = document.querySelectorAll('.status-indicator');
+            statusEls.forEach(el => {
+                el.className = 'status-indicator status-pending';
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initEnvironmentInfo();
+            generateTestUrls();
+            log('🚀 PDF Deployment Test Suite initialized', 'info');
+        });
+    </script>
+</body>
+</html>
