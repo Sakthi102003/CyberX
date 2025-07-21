@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import {
-  FiCode,
-  FiExternalLink,
-  FiEye,
-  FiGithub,
-  FiLayers,
-  FiShield,
-  FiStar
+    FiCode,
+    FiExternalLink,
+    FiEye,
+    FiGithub,
+    FiLayers,
+    FiShield,
+    FiStar
 } from 'react-icons/fi';
 import { useInView } from 'react-intersection-observer';
 import './Projects.css';
@@ -183,25 +183,27 @@ const Projects = () => {
             </p>
           </motion.div>
 
-          <motion.div className="projects-filters" variants={itemVariants}>
-            <div className="filter-buttons">
-              {filters.map((filter) => (
-                <motion.button
-                  key={filter.id}
-                  className={`filter-button ${activeFilter === filter.id ? 'active' : ''}`}
-                  onClick={() => setActiveFilter(filter.id)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <filter.icon className="filter-icon" />
-                  <span>{filter.label}</span>
-                </motion.button>
-              ))}
-            </div>
-            <div className="projects-count">
-              {filteredProjects.length} Project{filteredProjects.length !== 1 ? 's' : ''}
-            </div>
-          </motion.div>
+          <div className="projects-filters-container">
+            <motion.div className="projects-filters" variants={itemVariants}>
+              <div className="filter-buttons">
+                {filters.map((filter) => (
+                  <motion.button
+                    key={filter.id}
+                    className={`filter-button ${activeFilter === filter.id ? 'active' : ''}`}
+                    onClick={() => setActiveFilter(filter.id)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <filter.icon className="filter-icon" />
+                    <span>{filter.label}</span>
+                  </motion.button>
+                ))}
+              </div>
+              <div className="projects-count">
+                {filteredProjects.length} Project{filteredProjects.length !== 1 ? 's' : ''}
+              </div>
+            </motion.div>
+          </div>
 
           <motion.div className="projects-grid" layout>
             <AnimatePresence mode="wait">
